@@ -84,5 +84,25 @@ router.patch('/', async (req, res, next) => {
     }
 });
 
+router.delete('/', async (req, res, next) => {
+    try {
+        const connection = await pool.getConnection();
+        const query = 'DELETE FROM produtos WHERE id_produto = ?';
+        const values = [req.body.id_produto];
+        const [rows, fields] = await connection.execute(query, values);
+        connection.release();
+
+        res.status(202).send({
+            mensagem: 'Produto removido com sucesso',
+            produtos: rows
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error,
+            response: null
+        });
+    }
+});
 
 module.exports = router;
