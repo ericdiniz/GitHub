@@ -1,40 +1,88 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
-const mysql = require('../mysql').pool;
+const pool = require('../mysql'); // Aqui você importa o módulo do arquivo db.js
 
-router.get('/', (req, res, next) => {
-    res.status(200).send({
-        mensagem: 'rota de produtos usando GET'
-    })
-})
+router.post('/', async (req, res, next) => {
+    try {
+        const connection = await pool.getConnection();
+        const query = 'INSERT INTO produtos (nome, preco) VALUES (?, ?)';
+        const values = [req.body.nome, req.body.preco];
+        const [rows, fields] = await connection.execute(query, values);
+        connection.release();
 
-router.post('/', (req, res, next) => {
-    mysql.getConnection((error, conn) => {
-        conn.query('INSERT INTO produtos (nome, preco) VALUES (?, ?)'),
-            [req.body.nome, req.body.preco],
-            (error, resultado, field) => {
+        res.status(201).send({
+            mensagem: 'produto inserido com sucesso',
+            id_produto: rows.insertId
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error,
+            response: null
+        });
+    }
+});
 
-            }
-    })
-    res.status(201).send({
-        mensagem: 'rota de produtos usando POST',
-        produtoCriado: produto
-    })
-})
+router.get('/', async (req, res, next) => {
+    try {
+        const connection = await pool.getConnection();
+        const query = 'SELECT * FROM produtos';
+        const [rows, fields] = await connection.execute(query);
+        connection.release();
 
-router.get('/:id_produto', (req, res, next) => {
-    const id = req.params.id_produto
-    if (id === '1') {
         res.status(200).send({
-            mensagem: 'get produto exclusivo',
-            id: id
-        })
-    } else {
+            produtos: rows
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error,
+            response: null
+        });
+    }
+});
+
+
+router.get('/:id_produto', async (req, res, next) => {
+    try {
+        const id_produto = req.params.id_produto
+        const connection = await pool.getConnection();
+        const query = `SELECT * FROM produtos WHERE id_produto=${id_produto}`;
+        const [rows, fields] = await connection.execute(query);
+        connection.release();
+
         res.status(200).send({
-            mensagem: 'get produto normal',
-            id: id
-        })
+            produtos: rows
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error,
+            response: null
+        });
     }
 })
+
+router.patch('/', async (req, res, next) => {
+    try {
+        const connection = await pool.getConnection();
+        const query = 'UPDATE produtos SET nome = ?, preco = ? WHERE id_produto = ?';
+        const values = [req.body.nome, req.body.preco, req.body.id_produto];
+        const [rows, fields] = await connection.execute(query, values);
+        connection.release();
+
+        res.status(200).send({
+            mensagem: 'Produto atualizado com sucesso',
+            produtos: rows
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            error: error,
+            response: null
+        });
+    }
+});
+
 
 module.exports = router;
