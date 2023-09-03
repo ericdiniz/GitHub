@@ -1,1 +1,1 @@
-select * from produtos
+select * from pedidos
